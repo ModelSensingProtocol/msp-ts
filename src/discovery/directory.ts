@@ -16,12 +16,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-export interface DiscoveredEndpoint {
-  transportType: string;
-  host: string;
-  port: number;
-  nodeId: string;
-}
+import type { DiscoveredEndpoint, Discovery } from "./base.ts";
 
 /** 递归排序键的稳定序列化（对齐 Python `json.dumps(sort_keys=True)` 的用途）。 */
 function stableStringify(value: unknown): string {
@@ -33,66 +28,7 @@ function stableStringify(value: unknown): string {
   return "{" + entries.map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`).join(",") + "}";
 }
 
-export class DirectoryPresence {
-  private renewTimer: ReturnType<typeof setInterval> | null = null;
-  private readonly nodesDir: string;
-  private readonly nodeId: string;
-  private readonly renewIntervalMs: number;
-
-  constructor(nodesDir: string, nodeId: string, renewIntervalMs = 5_000) {
-    this.nodesDir = nodesDir;
-    this.nodeId = nodeId;
-    this.renewIntervalMs = renewIntervalMs;
-  }
-
-  private declarationPath(): string {
-    return path.join(this.nodesDir, `${this.nodeId}.json`);
-  }
-
-  private writeOnce(ep: DiscoveredEndpoint): void {
-    const decl = {
-      node_id: this.nodeId,
-      endpoint: {
-        transport_type: ep.transportType,
-        address: { host: ep.host, port: ep.port },
-      },
-      timestamp: Date.now() / 1000,
-    };
-    const target = this.declarationPath();
-    const tmp = target + ".tmp";
-    fs.writeFileSync(tmp, JSON.stringify(decl, null, 2), "utf-8");
-    fs.renameSync(tmp, target);
-  }
-
-  announce(ep: DiscoveredEndpoint): void {
-    fs.mkdirSync(this.nodesDir, { recursive: true });
-    this.writeOnce(ep);
-    if (!this.renewTimer) {
-      this.renewTimer = setInterval(() => {
-        try {
-          this.writeOnce(ep);
-        } catch {
-          /* 目录没了之类的瞬态；下个周期再试 */
-        }
-      }, this.renewIntervalMs);
-      this.renewTimer.unref?.();
-    }
-  }
-
-  withdraw(): void {
-    if (this.renewTimer) {
-      clearInterval(this.renewTimer);
-      this.renewTimer = null;
-    }
-    try {
-      fs.unlinkSync(this.declarationPath());
-    } catch {
-      /* 本来就没有 */
-    }
-  }
-}
-
-export class DirectoryDiscovery {
+export class DirectoryDiscovery implements Discovery {
   private readonly known = new Map<string, string>();
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private readonly nodesDir: string;

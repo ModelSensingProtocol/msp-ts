@@ -2,21 +2,31 @@
   "name": "msp-ts",
   "version": "0.1.0",
   "description": "MSP（Model Sensing Protocol）的 TypeScript 实现 —— 与 msp-py 线格式互通",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=22.6"
   },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "test": "node --test \"test/*.test.ts\"",
-    "test:unit": "node --test test/core.test.ts",
-    "test:interop": "node --test test/interop.test.ts",
-    "typecheck": "tsc --noEmit"
+    "test": "node --test \"test/**/*.test.ts\"",
+    "test:unit": "node --test \"test/unit/*.test.ts\"",
+    "test:interop": "node --test \"test/interop/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json"
   },
   "devDependencies": {
     "typescript": "^5.8.0",
     "@types/node": "^22.0.0"
-  },
-  "files": [
-    "src"
-  ]
+  }
 }

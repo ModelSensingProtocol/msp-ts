@@ -12,11 +12,14 @@
  *   - 「等待」天然是 await——settle 在这里就是Promise，不需要条件变量。
  */
 
-import { Manifest, ToolResult } from "./core.ts";
-import type { Signal } from "./core.ts";
-import { Protocol } from "./protocol.ts";
-import type { ToolHandler } from "./protocol.ts";
-import { DirectoryDiscovery, DirectoryPresence } from "./directory.ts";
+import { Manifest } from "./core/manifest.ts";
+import type { ToolResult } from "./core/content.ts";
+import { Protocol } from "./protocol/protocol.ts";
+import type { ToolHandler } from "./protocol/protocol.ts";
+import { DirectoryDiscovery } from "./discovery/directory.ts";
+import { DirectoryPresence } from "./presence/directory.ts";
+import { TcpTransport } from "./transport/tcp.ts";
+import type { Endpoint } from "./transport/base.ts";
 
 export interface MSPNodeOptions {
   nodesDir?: string;
@@ -30,6 +33,7 @@ export class MSPNode {
   readonly nodeId: string;
   readonly manifest = new Manifest();
   readonly protocol: Protocol;
+  private readonly transport: TcpTransport;
   private readonly opts: Required<Pick<MSPNodeOptions, "nodesDir" | "host" | "connectPolicy">> & { port?: number };
   private presence: DirectoryPresence | null = null;
   private discovery: DirectoryDiscovery | null = null;
@@ -45,7 +49,11 @@ export class MSPNode {
     };
     this.manifest.patterns = ["msp/publish-subscribe", "msp/request-reply"];
     this.manifest.capabilities = ["pub", "sub", "req", "rep"];
-    this.protocol = new Protocol({ nodeId, manifest: this.manifest });
+    // 组装点：传输层在这里创建并注入协议层（协议层不认识 TCP）
+    this.transport = new TcpTransport();
+    this.protocol = new Protocol({
+      nodeId, manifest: this.manifest, transport: this.transport,
+    });
   }
 
   // ------------------------------------------------------------------
@@ -89,7 +97,7 @@ export class MSPNode {
   // ------------------------------------------------------------------
 
   /** 监听 → 宣告 → 发现 →（eager）拨号已有邻居。返回绑定端点。 */
-  async start(): Promise<{ host: string; port: number }> {
+  async start(): Promise<Endpoint> {
     if (this.started) throw new Error("start() 只能调用一次");
     this.started = true;
 

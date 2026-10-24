@@ -8,17 +8,12 @@
  *   （入站侧甚至不回 ACK，让拨号方立刻感知）。
  */
 
-import {
-  decodeSignal,
-  encodeSignal,
-  makeSignal,
-  patternMatches,
-  SignalType,
-  ToolResult,
-} from "./core.ts";
-import type { Manifest, Signal } from "./core.ts";
-import { TcpConnection, TcpTransport } from "./tcp.ts";
-import type { TcpEndpoint } from "./tcp.ts";
+import { decodeSignal, encodeSignal, makeSignal, SignalType } from "../core/signal.ts";
+import type { Signal } from "../core/signal.ts";
+import type { Manifest } from "../core/manifest.ts";
+import { ToolResult } from "../core/content.ts";
+import { patternMatches } from "./matcher.ts";
+import type { ConnectionLike, Endpoint, TransportLike } from "../transport/base.ts";
 
 export type ToolHandler = (args: Record<string, unknown>) => Promise<unknown> | unknown;
 export type SignalHandler = (sig: Signal) => void;
@@ -31,6 +26,8 @@ interface PendingCall {
 export interface ProtocolOptions {
   nodeId: string;
   manifest: Manifest;
+  /** 传输层由外部注入：协议层不认识 TCP，只认识 ConnectionLike。 */
+  transport: TransportLike;
   handshakeTimeoutMs?: number;
   heartbeatIntervalMs?: number;
   heartbeatTimeoutMs?: number;
@@ -43,7 +40,7 @@ export class Protocol {
   private readonly heartbeatInterval: number;
   private readonly heartbeatTimeout: number;
 
-  readonly connections = new Map<string, TcpConnection>();
+  readonly connections = new Map<string, ConnectionLike>();
   readonly peerManifests = new Map<string, Record<string, unknown>>();
   private readonly lastSeen = new Map<string, number>();
   private readonly pending = new Map<string, PendingCall>();
@@ -52,7 +49,7 @@ export class Protocol {
   private reqCounter = 0;
   private stopped = false;
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
-  private readonly connMeta = new Map<TcpConnection, { peerId: string }>();
+  private readonly connMeta = new Map<ConnectionLike, { peerId: string }>();
 
   onPeerConnected: (peerId: string, manifest: Record<string, unknown>) => void = () => {};
   onPeerDisconnected: (peerId: string) => void = () => {};
@@ -60,6 +57,7 @@ export class Protocol {
   constructor(opts: ProtocolOptions) {
     this.nodeId = opts.nodeId;
     this.manifest = opts.manifest;
+    this.transport = opts.transport;
     this.handshakeTimeout = opts.handshakeTimeoutMs ?? 10_000;
     this.heartbeatInterval = opts.heartbeatIntervalMs ?? 15_000;
     this.heartbeatTimeout = opts.heartbeatTimeoutMs ?? 45_000;
@@ -73,10 +71,8 @@ export class Protocol {
     this.handlers.push({ pattern, cb });
   }
 
-  readonly transport = new TcpTransport();
-
-  /** 开始监听，返回绑定端点。accept 循环在后台跑。 */
-  async listenAndServe(opts: { host?: string; port?: number } = {}): Promise<TcpEndpoint> {
+  /** 开始监听，返回绑定端点。入站分发在后台跑。 */
+  async listenAndServe(opts: { host?: string; port?: number } = {}): Promise<Endpoint> {
     const ep = await this.transport.listen(opts);
     this.transport.setAcceptHandler((conn) => void this.handleInbound(conn));
     this.heartbeatTimer = setInterval(() => this.heartbeat(), this.heartbeatInterval);
@@ -85,8 +81,8 @@ export class Protocol {
   }
 
   /** 主动拨号 + 出站握手。失败返回 null（不致命：对端可能也在拨我们）。 */
-  async dial(ep: TcpEndpoint): Promise<string | null> {
-    let conn: TcpConnection;
+  async dial(ep: Endpoint): Promise<string | null> {
+    let conn: ConnectionLike;
     try {
       conn = await this.transport.connect(ep);
     } catch {
@@ -100,7 +96,7 @@ export class Protocol {
     }
   }
 
-  private async handleInbound(conn: TcpConnection): Promise<void> {
+  private async handleInbound(conn: ConnectionLike): Promise<void> {
     try {
       await this.handshakeInbound(conn);
     } catch {
@@ -108,7 +104,7 @@ export class Protocol {
     }
   }
 
-  private waitFrame(conn: TcpConnection, timeoutMs: number): Promise<Signal> {
+  private waitFrame(conn: ConnectionLike, timeoutMs: number): Promise<Signal> {
     return new Promise((resolve, reject) => {
       const prev = conn.onData;
       const timer = setTimeout(() => {
@@ -126,7 +122,7 @@ export class Protocol {
     });
   }
 
-  private async handshakeOutbound(conn: TcpConnection): Promise<string> {
+  private async handshakeOutbound(conn: ConnectionLike): Promise<string> {
     conn.send(encodeSignal(makeSignal(SignalType.HELLO, this.nodeId, {
       payload: { manifest: this.manifest.toDict() },
     })));
@@ -155,7 +151,7 @@ export class Protocol {
     return peerId;
   }
 
-  private async handshakeInbound(conn: TcpConnection): Promise<void> {
+  private async handshakeInbound(conn: ConnectionLike): Promise<void> {
     const hello = await this.waitFrame(conn, this.handshakeTimeout);
     if (hello.type !== SignalType.HELLO) {
       throw new Error(`握手失败，收到 ${hello.type}`);
@@ -173,7 +169,7 @@ export class Protocol {
 
   /** 去重仲裁：返回本条连接是否保留。规范方向 = node_id 较小一方 outbound。 */
   private finishHandshake(
-    conn: TcpConnection,
+    conn: ConnectionLike,
     peerId: string,
     peerManifest: Record<string, unknown>,
     outbound: boolean,
@@ -200,7 +196,7 @@ export class Protocol {
     return false;
   }
 
-  private register(conn: TcpConnection, peerId: string, peerManifest: Record<string, unknown>): void {
+  private register(conn: ConnectionLike, peerId: string, peerManifest: Record<string, unknown>): void {
     this.connections.set(peerId, conn);
     this.peerManifests.set(peerId, peerManifest);
     this.lastSeen.set(peerId, Date.now() / 1000);

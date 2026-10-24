@@ -7,15 +7,11 @@
 
 import * as net from "node:net";
 
-import { frameMessage, FrameDecoder } from "./core.ts";
-
-export interface TcpEndpoint {
-  host: string;
-  port: number;
-}
+import { FrameDecoder, frameMessage } from "../protocol/framing.ts";
+import type { ConnectionLike, Endpoint, TransportLike } from "./base.ts";
 
 /** 一条已完成的连接（不分客户端/服务端，握手属于协议层）。 */
-export class TcpConnection {
+export class TcpConnection implements ConnectionLike {
   private decoder = new FrameDecoder();
   private closed = false;
   private readonly sock: net.Socket;
@@ -67,7 +63,7 @@ export class TcpConnection {
 }
 
 /** 监听 + 入站分发 + 主动拨号。 */
-export class TcpTransport {
+export class TcpTransport implements TransportLike {
   private server: net.Server | null = null;
   private acceptHandler: ((conn: TcpConnection) => void) | null = null;
   private readonly earlyConnections: TcpConnection[] = [];
@@ -79,7 +75,7 @@ export class TcpTransport {
   }
 
   /** 开始监听（等 bind 完成）。port 0 = 动态分配；返回实际绑定的地址。 */
-  async listen(opts: { host?: string; port?: number } = {}): Promise<TcpEndpoint> {
+  async listen(opts: { host?: string; port?: number } = {}): Promise<Endpoint> {
     if (this.server) throw new Error("listen() 已调用");
     const server = net.createServer((sock) => {
       const conn = this.wrap(sock);
@@ -107,7 +103,7 @@ export class TcpTransport {
   }
 
   /** 主动拨号并返回裸连接（握手是协议层的职责）。 */
-  async connect(ep: TcpEndpoint, timeoutMs = 5000): Promise<TcpConnection> {
+  async connect(ep: Endpoint, timeoutMs = 5000): Promise<TcpConnection> {
     return new Promise((resolve, reject) => {
       const sock = net.connect({ host: ep.host, port: ep.port });
       const timer = setTimeout(() => {

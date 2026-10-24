@@ -1,7 +1,7 @@
 """互通测试的 Python 侧节点。用法：
 
-    python interop/py_node.py <nodes_dir> eager    # FULL_PEER：主动发现并拨号
-    python interop/py_node.py <nodes_dir> lazy     # 只宣告+接受入站（被 TS 拨）
+    python test/support/py_node.py <nodes_dir> eager    # FULL_PEER：主动发现并拨号
+    python test/support/py_node.py <nodes_dir> lazy     # 只宣告+接受入站（被 TS 拨）
 
 事件以 JSON 行打到 stdout（flush），TS 侧的测试据此断言。
 
@@ -19,7 +19,7 @@ import threading
 import time
 from pathlib import Path
 
-_MSP_SRC = Path(__file__).resolve().parents[1].parent / "ModelSensingProtocol" / "src"
+_MSP_SRC = Path(__file__).resolve().parents[2].parent / "ModelSensingProtocol" / "src"
 sys.path.insert(0, str(_MSP_SRC))
 
 from msp.core.node import MSPNode                    # noqa: E402
