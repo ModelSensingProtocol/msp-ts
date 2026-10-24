@@ -23,7 +23,8 @@
     "test:unit": "node --test \"test/unit/*.test.ts\"",
     "test:interop": "node --test \"test/interop/*.test.ts\"",
     "typecheck": "tsc -p tsconfig.json",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "demo": "node examples/hello.ts"
   },
   "devDependencies": {
     "typescript": "^5.8.0",
