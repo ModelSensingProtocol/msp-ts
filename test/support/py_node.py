@@ -14,16 +14,32 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import threading
 import time
 from pathlib import Path
 
-_MSP_SRC = Path(__file__).resolve().parents[2].parent / "ModelSensingProtocol" / "src"
-sys.path.insert(0, str(_MSP_SRC))
+# 找到 msp-py 的顺序：显式环境变量 → 同级目录的源码树 → 已装的包（pip install --pre msp-py）
+# 公开仓库里没有隔壁的 ModelSensingProtocol，所以外部的互通测试靠前两条之一或已装的包。
+_MSP_SRC_ENV = os.environ.get("MSP_PY_SRC")
+if _MSP_SRC_ENV:
+    sys.path.insert(0, str(Path(_MSP_SRC_ENV).expanduser().resolve()))
+else:
+    _SIBLING = Path(__file__).resolve().parents[2].parent / "ModelSensingProtocol" / "src"
+    if _SIBLING.is_dir():
+        sys.path.insert(0, str(_SIBLING))
 
-from msp.core.node import MSPNode                    # noqa: E402
-from msp.core.preset import Preset                   # noqa: E402
+try:
+    from msp.core.node import MSPNode                    # noqa: E402
+    from msp.core.preset import Preset                   # noqa: E402
+except ModuleNotFoundError:  # pragma: no cover - 只在互通测试环境里发生
+    sys.exit(
+        "找不到 msp 包。三条路选一条：\n"
+        "  1) 设 MSP_PY_SRC=<msp-py 源码树的 src 目录>\n"
+        "  2) 把 https://github.com/hxh230802/MSP 克隆到本仓库的同级目录（名字 ModelSensingProtocol）\n"
+        "  3) pip install --pre msp-py"
+    )
 
 
 def emit(event: dict) -> None:

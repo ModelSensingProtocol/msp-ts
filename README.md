@@ -14,6 +14,26 @@ npm test          # 24 个用例，其中 10 个是与真 Python 进程的互通
 不需要 `npm install`、不需要构建：Node ≥ 22.6 原生剥离类型，`src/*.ts` 直接被执行。
 （`npm i` 只为 `npm run typecheck` / `npm run build` 与将来发布。）
 
+### 两种测试的依赖不同
+
+| 命令 | 用例 | 需要什么 |
+|---|---|---|
+| `npm run test:unit` | 14 | **什么都不需要**，零依赖 |
+| `npm run test:interop` | 10 | 一个能跑的 `msp` Python 包 |
+
+互通测试要真的起 Python 节点进程，所以它得找到 `msp`。三选一：
+
+```bash
+# 1) 指向 msp-py 的源码树
+MSP_PY_SRC=/path/to/MSP/src npm run test:interop
+
+# 2) 把参考实现克隆到本仓库的同级目录（默认就找这个名字）
+git clone https://github.com/hxh230802/MSP ModelSensingProtocol
+
+# 3) 直接装包（PyPI 上是预发布，要 --pre）
+pip install --pre msp-py
+```
+
 ## 结构
 
 按层分目录，与 `msp-py`（`msp/{core,protocol,transport,discovery,presence}`）
@@ -128,3 +148,15 @@ HELLO → tool_call →（回调阻塞等结果）→ ACK
 | M5 | 浏览器 profile（WS-only + 手动发现；浏览器没有 TCP/目录发现） |
 
 另外还没接：`grants` 授权表（局域网内先信任）、`settle()`（TS 里等连接天然是 await）。
+
+## 相关
+
+- [`msp-py`](https://github.com/hxh230802/MSP) — Python 参考实现（[PyPI: `msp-py`](https://pypi.org/project/msp-py/)，当前 `0.1.0a1`）
+- `msp-dotnet` — .NET 实现
+- 线格式、握手、租约、去重仲裁等协议细节以 Python 参考实现的 `docs/DESIGN.md` 为准，本实现只保证**字节级互通**。
+
+## 已知限制
+
+- 模式层（`multi-round` / `task`）与 MCP 桥未实现，当前只有 `request-reply` 与 `publish-subscribe`。
+- 断开不自动重连（靠发现轮询重新接入）。
+- 无 TLS、无鉴权：定位是本机 / 局域网。
