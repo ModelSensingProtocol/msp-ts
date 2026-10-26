@@ -32,11 +32,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hxh230802/msp-ts.git"
+    "url": "git+https://github.com/ModelSensingProtocol/msp-ts.git"
   },
-  "homepage": "https://github.com/hxh230802/msp-ts#readme",
+  "homepage": "https://github.com/ModelSensingProtocol/msp-ts#readme",
   "bugs": {
-    "url": "https://github.com/hxh230802/msp-ts/issues"
+    "url": "https://github.com/ModelSensingProtocol/msp-ts/issues"
   },
   "keywords": [
     "msp",
