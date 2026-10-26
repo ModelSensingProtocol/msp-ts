@@ -29,5 +29,21 @@
   "devDependencies": {
     "typescript": "^5.8.0",
     "@types/node": "^22.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hxh230802/msp-ts.git"
+  },
+  "homepage": "https://github.com/hxh230802/msp-ts#readme",
+  "bugs": {
+    "url": "https://github.com/hxh230802/msp-ts/issues"
+  },
+  "keywords": [
+    "msp",
+    "model-sensing-protocol",
+    "protocol",
+    "multi-agent",
+    "typescript",
+    "zero-dependency"
+  ]
 }
