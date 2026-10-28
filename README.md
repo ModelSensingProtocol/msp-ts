@@ -10,6 +10,7 @@
   <a href="https://github.com/ModelSensingProtocol/msp-ts/commits/master"><img src="https://img.shields.io/github/last-commit/ModelSensingProtocol/msp-ts?label=last%20commit" alt="Last commit"></a>
   <img src="https://img.shields.io/badge/deps-0-brightgreen" alt="Zero dependencies">
   <img src="https://img.shields.io/badge/node-%E2%89%A522.6-339933" alt="Node 22.6+">
+  <img src="https://hits.sh/github.com/ModelSensingProtocol/msp-ts.svg?label=visitors&color=0a66e4" alt="Visitors">
   <br>
   <img src="https://img.shields.io/badge/protocol-MSP-0a66e4" alt="MSP">
   <a href="https://pypi.org/project/msp-py/"><img src="https://img.shields.io/pypi/v/msp-py?label=interop%20with%20msp-py&color=0a66e4" alt="msp-py on PyPI"></a>
