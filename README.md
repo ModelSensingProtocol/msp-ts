@@ -1,5 +1,21 @@
 # msp-ts
 
+<p align="center">
+  <img src="assets/banner.png" alt="msp-ts — Model Sensing Protocol for TypeScript, byte-level interop with msp-py">
+</p>
+
+<p align="center">
+  <a href="https://github.com/ModelSensingProtocol/msp-ts/stargazers"><img src="https://img.shields.io/github/stars/ModelSensingProtocol/msp-ts?style=flat&label=stars" alt="GitHub stars"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/ModelSensingProtocol/msp-ts?label=license" alt="License"></a>
+  <a href="https://github.com/ModelSensingProtocol/msp-ts/commits/master"><img src="https://img.shields.io/github/last-commit/ModelSensingProtocol/msp-ts?label=last%20commit" alt="Last commit"></a>
+  <img src="https://img.shields.io/badge/deps-0-brightgreen" alt="Zero dependencies">
+  <img src="https://img.shields.io/badge/node-%E2%89%A522.6-339933" alt="Node 22.6+">
+  <br>
+  <img src="https://img.shields.io/badge/protocol-MSP-0a66e4" alt="MSP">
+  <a href="https://pypi.org/project/msp-py/"><img src="https://img.shields.io/pypi/v/msp-py?label=interop%20with%20msp-py&color=0a66e4" alt="msp-py on PyPI"></a>
+  <img src="https://img.shields.io/badge/tests-24%20passed-brightgreen" alt="Tests">
+</p>
+
 MSP（Model Sensing Protocol）的 **TypeScript 实现**，与 Python 参考实现（`msp-py`）**线格式互通**：
 同一个共享目录里，TS 节点和 Python 节点互相发现、互相调用工具、互相订阅广播。
 
